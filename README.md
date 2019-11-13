@@ -4,11 +4,11 @@ languages:
 - csharp
 products:
 - dotnet
-description: "Add 150 character max description"
-urlFragment: "update-this-to-unique-url-stub"
+description: "This sample solution illustrates how to send AIP access denied alerts to users and Azure Sentinel via the Graph Security API "
+urlFragment: "AIP-AccessDenied-Alerts"
 ---
 
-# Official Microsoft Sample
+# AIP Notification Function for Security and Compliance Professionals
 
 <!-- 
 Guidelines on README format: https://review.docs.microsoft.com/help/onboard/admin/samples/concepts/readme-template?branch=master
@@ -18,36 +18,81 @@ Guidance on onboarding samples to docs.microsoft.com/samples: https://review.doc
 Taxonomies for products and languages: https://review.docs.microsoft.com/new-hope/information-architecture/metadata/taxonomies?branch=master
 -->
 
-Give a short description for your sample here. What does it do and why is it important?
+Azure Information Protection Custom Notification Solution for Users and Administrators.
 
-## Contents
+## Summary
+This repo contains sample code demonstrating how you can build a custom solution that helps your organizations notify AIP document owners when an access denied event is received for documents they protected. The sample solution uses an Azure Function to query Log Analytics and then sends each document owner an email via the Microsoft Graph. Optionally, the solution also shows how to send an alert to Azure Sentinel via Microsoft Graph Security API.  
 
-Outline the file contents of the repository. It helps users navigate the codebase, build configuration and any related assets.
+Why should you build something like this? Some customers have expressed the desired to notify document owners when a file access attempt is received for a document they protected using AIP. 
 
-| File/folder       | Description                                |
-|-------------------|--------------------------------------------|
-| `src`             | Sample source code.                        |
-| `.gitignore`      | Define what to ignore at commit time.      |
-| `CHANGELOG.md`    | List of changes to the sample.             |
-| `CONTRIBUTING.md` | Guidelines for contributing to the sample. |
-| `README.md`       | This README file.                          |
-| `LICENSE`         | The license for the sample.                |
+Please read our first blog [for more details on how to configure some of these settings](https://techcommunity.microsoft.com/t5/Azure-Information-Protection/How-to-Build-a-Custom-AIP-Tracking-Portal/ba-p/875849 "How to Build a Custom AIP Tracking Portal")
 
 ## Prerequisites
 
-Outline the required components and tools that a user might need to have on their machine in order to run the sample. This can be anything from frameworks, SDKs, OS versions or IDE releases.
+While the solution is quite simple, some assembly is required.
+
+•	Visual Studio 2017 or higher  
+•	An Azure subscription with a Log Analytics Workspace created  
+•	Azure Information Protection (AIP) with Log Analytics integration configured   
+•	Either Classic or Unified Labeling client installed on a supported version of Windows (7 or above as of today)   
+•	One Azure Function   
+•	An Azure AD application (Service Principal)  
+•	Optional: Azure Key Vault  
+
 
 ## Setup
 
-Explain how to prepare the sample once the user clones or downloads the repository. The section should outline every step necessary to install dependencies and set up any settings (for example, API keys and output folders).
+## Clone the Repository
+1. Open a command prompt  
+2. Create a new folder mkdir c:\samples  
+3. Navigate to the new folder using cd c:\samples  
+4. Clone the repository by running git clone https://github.com/Azure-Samples/AIP-AccessDenied-Alerts  
+5. In explorer, navigate to c:\samples\AIP-AccessDenied-Alerts and open the AIP-AccessDenied-Alerts.sln in Visual Studio 2017 or later.  
 
-## Runnning the sample
+## Add the NuGet Package
+In Visual Studio, right click the _AIP-AccessDenied-Alerts_ solution.  
+Click **Restore NuGet Packages**
 
-Outline step-by-step instructions to execute the sample and see its output. Include steps for executing the sample from the IDE, starting specific services in the Azure portal or anything related to the overall launch of the code.
+## Authentication
+This sample solution uses a single application (service principal) that you must register in Azure AD. Note that this service pricipal requires **Data.Reader** rights in your Log Analytics Workspace as explained on the blog above.  
+[Follow these instructions to register an application in Azure Active Directory](https://dev.loganalytics.io/oms/documentation/1-Tutorials/1-Direct-API "Register Azure AD app")
 
-## Key concepts
+## Azure Functions keys
+To view your keys, create new ones, navigate to one of your HTTP-triggered functions in the [Azure portal]( https://portal.azure.com "Azure Portal") and select **Manage**.  
+Functions lets you use keys to make it harder to access your HTTP function endpoints during development. A standard HTTP trigger may require such an API key be present in the request. Most HTTP trigger templates require an API key in the request. 
+ 
+ ## Important
+While keys may help obfuscate your HTTP endpoints during development, they are not intended to secure an HTTP trigger in production. To learn more, see [Secure an HTTP endpoint in production](https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-http-webhook#secure-an-http-endpoint-in-production "Secure HTTP endpoint in production").
 
-Provide users with more context on the tools and services used in the sample. Explain some of the code that is being used and how services interact with each other.
+## Setup/Configure Azure Key Vault
+Although Azure Key Vault is an optional component, we highly recommend it. As a bonus, it’s already wired up on both Azure Functions.    
+
+**NOTE** Make sure you follow the [managed identities]( https://docs.microsoft.com/en-us/azure/app-service/overview-managed-identity#creating-an-app-with-an-identity "Tenant ID") instructions as well if you decide to use Key Vault.
+
+Please follow Jeff’s excellent walkthrough on how to setup Key Vault: [Configure Azure Key Vault]( https://medium.com/statuscode/getting-key-vault-secrets-in-azure-functions-37620fd20a0b "Tenant ID")
+
+## Update appSettings
+For production deployment you may want to use the Azure Key Vault implementation to make sure your keys/secrets are properly protected. For testing however, you can just assign hardcoded values to the variables below within the Function1 Run method.
+
+| Key       | Value                                |
+|-------------------|--------------------------------------------|
+| `workspaceId`             | Log Analytics Worskpace ID from the [Log Analytics workspaces blade]( https://portal.azure.com/#blade/HubsExtension/BrowseResourceBlade/resourceType/Microsoft.OperationalInsights%2Fworkspaces "Workspace Id") |
+| `clientId`      | From the [AAD Registered Apps blade]( https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps "Client Id")      |
+| `clientSecret`    | From the [AAD Registered Apps blade]( https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/RegisteredApps "Client Secret")            |
+| `tenantId`      | From the [AAD Properties Blade]( https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/Properties "Tenant ID")  |
+| `domain`    | Domain of AAD Tenant - e.g. Contoso.Onmicrosoft.com      |
+| `SenderEmail`    | Sender Email Address - e.g. userid@domain.com      |
+| `appUri`    | App URI from AAD App registration     |
+
+## Publish your Function to Azure
+You can just right click on the _AIP-AccessDenied-Alerts_ solution in Visual Studio and click Publish.  
+Please follow these instructions on [how to publish an Azure Function to Azure using Visual Studio]( https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-your-first-function-visual-studio "Publish First Function to Azure"). 
+
+Finally, we want to hear from you. Please contribute and let us know what other use cases you come up with.
+
+## Sources/Attribution/License/3rd Party Code
+Unless otherwise noted, all content is licensed under MIT license.  
+JSON de/serialization provided by [Json.NET](https://www.nuget.org/packages/Newtonsoft.Json/)  
 
 ## Contributing
 
